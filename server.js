@@ -12,7 +12,7 @@ const app = express();
 // Configuración de almacenamiento para Multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-      cb(null, path.join(__dirname, '../uploads')); // Directorio para almacenar archivos
+      cb(null, path.join(__dirname, 'uploads')); // Carpeta 'uploads' dentro del directorio raíz
   },
   filename: (req, file, cb) => {
       cb(null, Date.now() + '-' + file.originalname); // Nombre único para cada archivo
@@ -21,16 +21,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-
-const router = express.Router();
-
-router.post('/upload', upload.single('image'), (req, res) => {
+// Ruta para la subida de archivos
+app.post('/upload', upload.single('image'), (req, res) => {
   if (!req.file) {
       return res.status(400).json({ error: 'No se subió ningún archivo' });
   }
-  res.status(200).json({ filePath: `/uploads/${req.file.filename}` });
+  // Cambia la URL base para que apunte a tu dominio en producción
+  res.status(200).json({ filePath: `http://santiagolimpio.guamanpoma.org/uploads/${req.file.filename}` });
 });
-
 
 // Configuración de CORS para permitir cualquier origen
 app.use(cors({
@@ -44,7 +42,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware para analizar el cuerpo de las solicitudes
 app.use(bodyParser.json());
 
-// Middleware para servir archivos estáticos (carpeta uploads)
+// Middleware para servir archivos estáticos desde la carpeta 'uploads'
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Registro de rutas
