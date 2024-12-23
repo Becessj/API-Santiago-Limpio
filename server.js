@@ -27,7 +27,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
       return res.status(400).json({ error: 'No se subió ningún archivo' });
   }
   // Cambia la URL base para que apunte a tu dominio en producción
-  res.status(200).json({ filePath: `http://santiagolimpio.guamanpoma.org/uploads/${req.file.filename}` });
+  res.status(200).json({ filePath: `https://santiagolimpio.guamanpoma.org/uploads/${req.file.filename}` });
 });
 
 // Configuración de CORS para permitir cualquier origen

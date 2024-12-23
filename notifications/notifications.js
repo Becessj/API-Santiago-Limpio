@@ -18,7 +18,7 @@ const upload = multer({ storage });
 // Endpoint para subir imágenes
 router.post('/upload', upload.single('image'), (req, res) => {
     if (req.file) {
-      const filePath = `http://santiagolimpio.guamanpoma.org/uploads/${req.file.filename}`;
+      const filePath = `https://santiagolimpio.guamanpoma.org/uploads/${req.file.filename}`;
       res.json({ filePath });
     } else {
       res.status(400).send('No se pudo subir la imagen');
