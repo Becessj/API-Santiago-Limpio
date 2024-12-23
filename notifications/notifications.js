@@ -28,7 +28,7 @@ router.post('/upload', upload.single('image'), (req, res) => {
 // Obtener todas las notificaciones
 router.get('/notifications', async (req, res) => {
     try {
-        const [notifications] = await db.query('SELECT * FROM Notifications');
+        const [notifications] = await db.query('SELECT * FROM notifications');
         res.json(notifications);
     } catch (err) {
         res.status(500).json({ error: err.message });

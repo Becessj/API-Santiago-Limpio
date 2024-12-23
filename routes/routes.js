@@ -75,7 +75,7 @@ router.get('/routes', async (req, res) => {
 
             // Insertar la nueva ruta con el ID proporcionado y fecha actual
             await db.query(
-                'INSERT INTO routes (id, name, days, truck, schedule_start,schedule_end, img_map, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW() + INTERVAL 2 HOUR)',
+                'INSERT INTO routes (id, name, days, truck, schedule_start,schedule_end, img_map, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
                 [id, name, days, truck, schedule_start, schedule_end, img_map]
             );
 
