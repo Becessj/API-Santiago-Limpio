@@ -41,7 +41,7 @@ router.post('/notifications', async (req, res) => {
     const { image_url, text, date, title } = req.body;
     try {
         const [result] = await db.query(
-            'INSERT INTO Notifications (image_url, text, date, title) VALUES (?, ?, ?, ?)',
+            'INSERT INTO notifications (image_url, text, date, title) VALUES (?, ?, ?, ?)',
             [image_url, text, date, title]
         );
         res.status(201).json({ message: 'Notificación creada correctamente', id: result.insertId });
