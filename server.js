@@ -39,7 +39,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'] // Headers permitidos
 }));
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Middleware para analizar el cuerpo de las solicitudes
 app.use(bodyParser.json());
