@@ -20,7 +20,7 @@ cloudinary.config({
 // Usar almacenamiento en memoria para Multer
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }); // Middleware 'upload'
-
+   
 // Ruta para subir imágenes a Cloudinary
 router.post('/upload-to-cloudinary', upload.single('image'), async (req, res) => {
   if (!req.file) {
