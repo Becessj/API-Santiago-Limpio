@@ -6,28 +6,28 @@ const path = require('path');
 const routes = require('./routes/routes');
 const trucks = require('./trucks/trucks');
 const notifications = require('./notifications/notifications');
+const noticias = require('./noticias/noticias');
 const multer = require('multer');
 const app = express();
 
-// Configuración de almacenamiento para Multer
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-      cb(null, path.join(__dirname, 'uploads')); // Carpeta 'uploads' dentro del directorio raíz
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Directorio donde se guardarán las imágenes
   },
-  filename: (req, file, cb) => {
-      cb(null, Date.now() + '-' + file.originalname); // Nombre único para cada archivo
-  }
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`); // Nombre único para cada archivo
+  },
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
-// Ruta para la subida de archivos
-app.post('/upload', upload.single('image'), (req, res) => {
+// Ruta para recibir las imágenes y guardarlas
+app.post('/uploads', upload.single('image'), (req, res) => {
   if (!req.file) {
-      return res.status(400).json({ error: 'No se subió ningún archivo' });
+    return res.status(400).send('No se ha subido ninguna imagen');
   }
-  // Cambia la URL base para que apunte a tu dominio en producción
-  res.status(200).json({ filePath: `https://santiagolimpio.guamanpoma.org/uploads/${req.file.filename}` });
+  // Responder con el nombre de archivo o la URL de la imagen subida
+  res.json({ filename: req.file.filename });
 });
 
 // Configuración de CORS para permitir cualquier origen
@@ -49,7 +49,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api', routes);
 app.use('/api', trucks);
 app.use('/api', notifications);
-
+app.use('/api', noticias);
 // Inicio del servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

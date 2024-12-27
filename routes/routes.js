@@ -21,6 +21,7 @@ router.get('/routes', async (req, res) => {
                 days: route.days,
                 nombreruta: route.name,
                 truck: route.truck,
+                img_map: route.img_map, // Desde `routes`
                 schedule_start: route.schedule_start,
                 schedule_end: route.schedule_end,
               },
@@ -124,6 +125,7 @@ router.get('/routes/:id', async (req, res) => {
             days: routeData.days, // Desde `routes`
             nombreruta: routeData.name, // Desde `routes`
             Camion: routeData.truck, // Desde `routes`
+            img_map: routeData.img_map, // Desde `routes`
             Horario_start: routeData.schedule_start, // Desde `routes`
             Horario_end: routeData.schedule_end, // Desde `routes`
         // crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:OGC:1.3:CRS84' } },
