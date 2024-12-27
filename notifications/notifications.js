@@ -1,12 +1,53 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../models/db'); // Conexión a la base de datos
-
+const multer = require('multer');
 const axios = require('axios');
 const FormData = require('form-data');
 const path = require('path');
 
 
+const cloudinary = require('cloudinary').v2; // Importar Cloudinary
+
+
+// Configuración de Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
+});
+
+// Usar almacenamiento en memoria para Multer
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage }); // Middleware 'upload'
+
+// Ruta para subir imágenes a Cloudinary
+// Ruta para subir imágenes a Cloudinary
+router.post('/upload-to-cloudinary', upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No se ha subido ninguna imagen');
+  }
+
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: 'uploads', resource_type: 'image' },
+        (error, result) => {
+          if (error) {
+            return reject(error);
+          }
+          resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+
+    res.json({ filePath: result.secure_url });
+  } catch (error) {
+    console.error('Error al subir la imagen a Cloudinary:', error);
+    res.status(500).send('Error al subir la imagen');
+  }
+});
 
 // Obtener todas las notificaciones
 router.get('/notifications', async (req, res) => {
