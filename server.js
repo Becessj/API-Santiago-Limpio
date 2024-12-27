@@ -10,25 +10,49 @@ const noticias = require('./noticias/noticias');
 const multer = require('multer');
 const app = express();
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Directorio donde se guardarán las imágenes
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`); // Nombre único para cada archivo
-  },
+
+const cloudinary = require('cloudinary').v2; // Importar Cloudinary
+
+// Configuración de Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME, 
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
 });
 
-const upload = multer({ storage: storage });
+// Usar almacenamiento en memoria para Multer
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });  // Definir el middleware 'upload'
 
-// Ruta para recibir las imágenes y guardarlas
-app.post('/uploads', upload.single('image'), (req, res) => {
+// Ruta para subir imágenes a Cloudinary
+app.post('/uploads', upload.single('image'), async (req, res) => {
   if (!req.file) {
     return res.status(400).send('No se ha subido ninguna imagen');
   }
-  // Responder con el nombre de archivo o la URL de la imagen subida
-  res.json({ filename: req.file.filename });
+
+  try {
+    // Subir la imagen a Cloudinary
+    const result = await cloudinary.uploader.upload_stream({ 
+      resource_type: 'auto' 
+    }, (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: 'Error al subir la imagen a Cloudinary' });
+      }
+      // Responder con la URL de la imagen en Cloudinary
+      return res.json({ filePath: result.secure_url });
+    });
+
+    // Pasamos el buffer de la imagen a Cloudinary
+    result.end(req.file.buffer);
+
+  } catch (error) {
+    console.error('Error al subir la imagen a Cloudinary:', error);
+    res.status(500).send('Error en el servidor');
+  }
 });
+
+
+
 
 // Configuración de CORS para permitir cualquier origen
 app.use(cors({
@@ -42,8 +66,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware para analizar el cuerpo de las solicitudes
 app.use(bodyParser.json());
 
-// Middleware para servir archivos estáticos desde la carpeta 'uploads'
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // Registro de rutas
 app.use('/api', routes);
