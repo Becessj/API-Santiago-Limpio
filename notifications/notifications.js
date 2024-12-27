@@ -78,7 +78,7 @@ router.put('/notifications/:id', async (req, res) => {
     const { image_url, text, date, title } = req.body;
     try {
         await db.query(
-            'UPDATE Notifications SET image_url = ?, text = ?, date = ?, title = ? WHERE id = ?',
+            'UPDATE notifications SET image_url = ?, text = ?, date = ?, title = ? WHERE id = ?',
             [image_url, text, date, title, id]
         );
         res.json({ message: 'Notificación actualizada correctamente' });
@@ -91,7 +91,7 @@ router.put('/notifications/:id', async (req, res) => {
 router.delete('/notifications/:id', async (req, res) => {
     const id = req.params.id;
     try {
-        await db.query('DELETE FROM Notifications WHERE id = ?', [id]);
+        await db.query('DELETE FROM notifications WHERE id = ?', [id]);
         res.json({ message: 'Notificación eliminada correctamente' });
     } catch (err) {
         res.status(500).json({ error: err.message });
