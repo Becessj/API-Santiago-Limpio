@@ -4,27 +4,46 @@ const db = require('../models/db'); // Conexión a la base de datos
 const multer = require('multer');
 const path = require('path');
 
-// Configuración de multer para manejar la subida de imágenes
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Carpeta para imágenes
-    },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
-    }
-});
-const upload = multer({ storage });
+const cloudinary = require('cloudinary').v2; // Importar Cloudinary
 
-// Subir imágenes para las noticias
-router.post('/upload', upload.single('image'), (req, res) => {
-    if (req.file) {
-        const filePath = `http://localhost:3001/uploads/${req.file.filename}`;
-        res.json({ filePath });
-    } else {
-        res.status(400).send('No se pudo subir la imagen');
-    }
+
+// Configuración de Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
 });
 
+// Usar almacenamiento en memoria para Multer
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage }); // Middleware 'upload'
+   
+// Ruta para subir imágenes a Cloudinary
+router.post('/upload-to-cloudinary', upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No se ha subido ninguna imagen');
+  }
+
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: 'uploads', resource_type: 'image' },
+        (error, result) => {
+          if (error) {
+            return reject(error);
+          }
+          resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+
+    res.json({ filePath: result.secure_url });
+  } catch (error) {
+    console.error('Error al subir la imagen a Cloudinary:', error);
+    res.status(500).send('Error al subir la imagen');
+  }
+});
 // Obtener todas las noticias
 router.get('/news', async (req, res) => {
     try {
