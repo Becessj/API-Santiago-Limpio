@@ -4,7 +4,7 @@ const db = require('../models/db'); // Conexión a la base de datos
 const cron = require('node-cron');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-
+const axios = require('axios');
 // Configuración de Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -83,7 +83,7 @@ router.post('/update-notifications', async (req, res) => {
     }
   });
 
-  
+
 // Obtener todas las notificaciones activas
 router.get('/notifications', async (req, res) => {
   try {
@@ -183,5 +183,93 @@ router.get('/countnotifications', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Ruta para registrar el token de Expo Push
+router.post('/register-push-token', async (req, res) => {
+    const { token } = req.body; // Token de Expo Push enviado desde la app
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Token no proporcionado' });
+    }
+  
+    try {
+      // Verificar si el token ya está registrado
+      const [existingToken] = await db.query('SELECT * FROM push_tokens WHERE token = ?', [token]);
+  
+      if (existingToken.length > 0) {
+        // Si ya está registrado, devolver un mensaje
+        return res.status(200).json({ message: 'Token ya registrado' });
+      }
+  
+      // Guardar el nuevo token en la base de datos
+      await db.query('INSERT INTO push_tokens (token) VALUES (?)', [token]);
+  
+      res.status(201).json({ message: 'Token registrado correctamente' });
+    } catch (err) {
+      console.error('Error al registrar el token:', err);
+      res.status(500).json({ error: 'Error al registrar el token' });
+    }
+  });
+
+  // Ruta para enviar notificaciones a todos los tokens
+router.post('/send-notification', async (req, res) => {
+    const { title, body, data } = req.body; // Datos de la notificación
+    
+    try {
+      // Obtener todos los tokens desde la base de datos
+      const [tokens] = await db.query('SELECT token FROM push_tokens');
+      
+      if (tokens.length === 0) {
+        return res.status(404).json({ error: 'No hay tokens registrados' });
+      }
+  
+      // Crear un array de tokens
+      const expoTokens = tokens.map((tokenObj) => tokenObj.token);
+  
+      // Crear el mensaje de notificación
+      const message = {
+        to: expoTokens,
+        sound: 'default',
+        title,
+        body,
+        data, // Si quieres enviar datos adicionales
+      };
+  
+      // Enviar la notificación a Expo
+      const response = await axios.post(
+        'https://exp.host/--/api/v2/push/send',
+        message,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+  
+      res.status(200).json({ message: 'Notificaciones enviadas correctamente', response: response.data });
+
+    } catch (err) {
+      console.error('Error al enviar la notificación:', err);
+      res.status(500).json({ error: 'Error al enviar la notificación' });
+    }
+  });
+// Ruta para obtener todos los tokens registrados
+router.get('/push-tokens', async (req, res) => {
+    try {
+      // Obtener todos los tokens desde la base de datos
+      const [tokens] = await db.query('SELECT token FROM push_tokens');
+      
+      if (tokens.length === 0) {
+        return res.status(404).json({ message: 'No hay tokens registrados' });
+      }
+  
+      // Responder con los tokens
+      res.status(200).json(tokens);
+    } catch (err) {
+      console.error('Error al obtener los tokens:', err);
+      res.status(500).json({ error: 'Error al obtener los tokens' });
+    }
+  });
+  
 
 module.exports = router;
