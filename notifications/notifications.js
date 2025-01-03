@@ -176,7 +176,7 @@ router.delete('/notifications/:id', async (req, res) => {
 router.get('/countnotifications', async (req, res) => {
   try {
     const [[{ count }]] = await db.query(
-      'SELECT COUNT(*) AS count FROM notifications WHERE status = "ACTIVO"' 
+      'SELECT COUNT(*) AS count FROM notifications' 
     );
     res.json({ count });
   } catch (err) {
