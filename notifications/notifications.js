@@ -4,7 +4,11 @@ const db = require('../models/db'); // Conexión a la base de datos
 const cron = require('node-cron');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const admin = require('firebase-admin');
+const path = require('path');
 const axios = require('axios');
+
+
 // Configuración de Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -12,6 +16,21 @@ cloudinary.config({
   api_secret: process.env.API_SECRET,
 });
 
+const serviceAccount = {
+    type: "service_account",
+    project_id: process.env.GOOGLE_CLOUD_PROJECT_ID,
+    private_key_id: "71826c3a28fe5e0d1e6234bb51efadbb2768c126",  // Puedes omitirlo o incluirlo si es necesario
+    private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),  // Asegúrate de formatear correctamente el salto de línea
+    client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+    client_id: "105283752859871889002",  // Omitido si no lo necesitas
+    auth_uri: "https://accounts.google.com/o/oauth2/auth",
+    token_uri: "https://oauth2.googleapis.com/token",
+    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+    client_x509_cert_url: "your-cert-url"  // También puedes omitir esto si no es necesario
+  };
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
 // Usar almacenamiento en memoria para Multer
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -42,6 +61,7 @@ router.post('/upload-to-cloudinary', upload.single('image'), async (req, res) =>
     res.status(500).send('Error al subir la imagen');
   }
 });
+
 
 // Configurar la tarea cron para ejecutarse todos los días a medianoche (00:00)
 //cron.schedule('0 0 * * *', async () => {
@@ -270,6 +290,73 @@ router.get('/push-tokens', async (req, res) => {
       res.status(500).json({ error: 'Error al obtener los tokens' });
     }
   });
+
+// Ruta para registrar un token FCM
+router.post('/register-fcm-token', async (req, res) => {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: 'Token no proporcionado' });
+    }
   
+    try {
+      const [existingToken] = await db.query('SELECT * FROM push_tokens WHERE token = ?', [token]);
+      if (existingToken.length > 0) {
+        return res.status(200).json({ message: 'Token ya registrado' });
+      }
+      await db.query('INSERT INTO push_tokens (token) VALUES (?)', [token]);
+      res.status(201).json({ message: 'Token registrado correctamente' });
+    } catch (err) {
+      console.error('Error al registrar el token:', err);
+      res.status(500).json({ error: 'Error al registrar el token' });
+    }
+  });
+  
+  // Ruta para enviar notificaciones mediante FCM
+  router.post('/send-fcm-notification', async (req, res) => {
+    const { title, body, data } = req.body;
+  
+    try {
+      const [tokens] = await db.query('SELECT token FROM push_tokens');
+      if (tokens.length === 0) {
+        return res.status(404).json({ error: 'No hay tokens registrados' });
+      }
+  
+      const fcmTokens = tokens.map((tokenObj) => tokenObj.token);
+  
+      const message = {
+        notification: {
+          title,
+          body,
+        },
+        data: data || {}, // Datos adicionales opcionales
+        tokens: fcmTokens,
+      };
+  
+      const response = await admin.messaging().sendMulticast(message);
+      res.status(200).json({
+        message: 'Notificaciones enviadas correctamente',
+        successCount: response.successCount,
+        failureCount: response.failureCount,
+      });
+    } catch (err) {
+      console.error('Error al enviar la notificación:', err);
+      res.status(500).json({ error: 'Error al enviar la notificación' });
+    }
+  });
+  
+  // Ruta para obtener todos los tokens registrados
+  router.get('/fcm-tokens', async (req, res) => {
+    try {
+      const [tokens] = await db.query('SELECT token FROM push_tokens');
+      if (tokens.length === 0) {
+        return res.status(404).json({ message: 'No hay tokens registrados' });
+      }
+      res.status(200).json(tokens);
+    } catch (err) {
+      console.error('Error al obtener los tokens:', err);
+      res.status(500).json({ error: 'Error al obtener los tokens' });
+    }
+  });
+
 
 module.exports = router;
