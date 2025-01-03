@@ -46,22 +46,22 @@ router.post('/upload-to-cloudinary', upload.single('image'), async (req, res) =>
 // Configurar la tarea cron para ejecutarse todos los días a medianoche (00:00)
 //cron.schedule('0 0 * * *', async () => {
 //este se ejecuta cada minuto
-cron.schedule('* * * * *', async () => {
-    try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Poner la hora en 00:00:00 para comparar solo las fechas
-      const todayStr = today.toISOString().split('T')[0]; // Obtener la fecha actual en formato YYYY-MM-DD
+// cron.schedule('* * * * *', async () => {
+//     try {
+//       const today = new Date();
+//       today.setHours(0, 0, 0, 0); // Poner la hora en 00:00:00 para comparar solo las fechas
+//       const todayStr = today.toISOString().split('T')[0]; // Obtener la fecha actual en formato YYYY-MM-DD
   
-      // Actualizar las notificaciones con fecha_end menor o igual a hoy, y estado != 'INACTIVO'
-      await db.query(
-        'UPDATE notifications SET status = "INACTIVO" WHERE date_end <= ? AND status != "INACTIVO"',
-        [todayStr]
-      );
-      console.log('Notificaciones actualizadas a INACTIVO correctamente');
-    } catch (err) {
-      console.error('Error al actualizar las notificaciones:', err);
-    }
-  });
+//       // Actualizar las notificaciones con fecha_end menor o igual a hoy, y estado != 'INACTIVO'
+//       await db.query(
+//         'UPDATE notifications SET status = "INACTIVO" WHERE date_end <= ? AND status != "INACTIVO"',
+//         [todayStr]
+//       );
+//       console.log('Notificaciones actualizadas a INACTIVO correctamente');
+//     } catch (err) {
+//       console.error('Error al actualizar las notificaciones:', err);
+//     }
+//   });
 
   // Endpoint POST para actualizar notificaciones
 router.post('/update-notifications', async (req, res) => {

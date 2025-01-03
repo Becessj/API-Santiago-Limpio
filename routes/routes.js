@@ -207,4 +207,59 @@ router.get('/countroutes', async (req, res) => {
   }
 });
 
+// Totalizado de todas las rutas
+// Porcentaje de completitud de todas las rutas
+// Porcentaje de completitud de todas las rutas
+router.get('/total', async (req, res) => {
+  try {
+      const [rows] = await db.query(`
+          SELECT
+              SUM(CASE WHEN days IS NOT NULL AND days != '' THEN 1 ELSE 0 END) AS days_count,
+              SUM(CASE WHEN truck IS NOT NULL AND truck != '' THEN 1 ELSE 0 END) AS truck_count,
+              SUM(CASE WHEN schedule_start IS NOT NULL AND schedule_start != '' THEN 1 ELSE 0 END) AS schedule_start_count,
+              SUM(CASE WHEN schedule_end IS NOT NULL AND schedule_end != '' THEN 1 ELSE 0 END) AS schedule_end_count,
+              COUNT(*) AS total_routes
+          FROM routes
+      `);
+
+      const {
+          days_count = 0,
+          truck_count = 0,
+          schedule_start_count = 0,
+          schedule_end_count = 0,
+          total_routes = 0
+      } = rows[0] || {};
+
+      // Asegurarse de que todos los valores sean numéricos
+      const numDaysCount = Number(days_count);
+      const numTruckCount = Number(truck_count);
+      const numScheduleStartCount = Number(schedule_start_count);
+      const numScheduleEndCount = Number(schedule_end_count);
+      const numTotalRoutes = Number(total_routes);
+
+      // Total de campos completados
+      const totalFieldsCompleted = numDaysCount + numTruckCount + numScheduleStartCount + numScheduleEndCount;
+
+      // Total de campos esperados
+      const totalFieldsExpected = numTotalRoutes * 4; // 4 campos por cada ruta
+
+      // Calcular porcentaje de completitud
+      let completionPercentage = 0;
+      if (totalFieldsExpected > 0) {
+          completionPercentage = (totalFieldsCompleted / totalFieldsExpected) * 100;
+      }
+
+      // Asegurarse de que el porcentaje no supere 100
+      completionPercentage = Math.min(Math.round(completionPercentage), 100);
+
+      res.json({ completion_percentage: completionPercentage });
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
+
 module.exports = router;
