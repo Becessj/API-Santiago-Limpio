@@ -312,37 +312,51 @@ router.post('/register-fcm-token', async (req, res) => {
   });
   
   // Ruta para enviar notificaciones mediante FCM
-  router.post('/send-fcm-notification', async (req, res) => {
+// Ruta para enviar notificaciones mediante FCM
+router.post('/send-fcm-notification', async (req, res) => {
     const { title, body, data } = req.body;
   
     try {
+      // Obtener todos los tokens desde la base de datos
       const [tokens] = await db.query('SELECT token FROM push_tokens');
+  
       if (tokens.length === 0) {
         return res.status(404).json({ error: 'No hay tokens registrados' });
       }
   
+      // Mapear los tokens a un array
       const fcmTokens = tokens.map((tokenObj) => tokenObj.token);
   
-      const message = {
+      // Crear el mensaje de notificación para cada token
+      const messages = fcmTokens.map((token) => ({
         notification: {
           title,
           body,
         },
-        data: data || {}, // Datos adicionales opcionales
-        tokens: fcmTokens,
-      };
+        data: data || {},
+        token, // Enviar el mensaje a un único token
+      }));
   
-      const response = await admin.messaging().sendMulticast(message);
+      // Enviar todas las notificaciones a través de FCM (con send())
+      const response = await Promise.all(messages.map((message) => admin.messaging().send(message)));
+  
+      // Verificar la respuesta
+      const failedTokens = response.filter((resp) => resp.error);
+      if (failedTokens.length > 0) {
+        console.error('Notificaciones fallidas para los tokens:', failedTokens);
+      }
+  
       res.status(200).json({
         message: 'Notificaciones enviadas correctamente',
-        successCount: response.successCount,
-        failureCount: response.failureCount,
+        response: response,
       });
     } catch (err) {
       console.error('Error al enviar la notificación:', err);
       res.status(500).json({ error: 'Error al enviar la notificación' });
     }
   });
+  
+  
   
   // Ruta para obtener todos los tokens registrados
   router.get('/fcm-tokens', async (req, res) => {
