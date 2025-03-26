@@ -40,6 +40,7 @@ router.get('/routes', async (req, res) => {
                       days: route.days,
                       nombreruta: route.route_name,
                       truck: route.truck_id,
+                      truck_name: route.truck_name,
                       imei: route.imei,  // 📌 Se agrega `imei` a la ruta
                       img_map: route.img_map,
                       schedule_start: route.schedule_start,
